@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 1-4</title>
+  </head>
+  <body>
+    <h1>Почему интерфейс завис</h1>
+    <p>
+      Две кнопки: «Посчитать» (тяжёлый цикл) и «Счётчик» (простой кликер).
+      Сначала убедимся, что синхронный цикл блокирует счётчик. Затем разобьём
+      работу на части по 5–10 мс через <code>setTimeout</code>.
+    </p>
+
+    <!-- Счётчик -->
+    <div class="panel">
+      <strong>Счётчик (должен оставаться кликабельным)</strong>
+      <div class="row">
+        <button id="counter-btn" type="button">+1</button>
+        <span class="counter-display" id="counter-value">0</span>
+        <button id="counter-reset" type="button">Сброс</button>
+      </div>
+    </div>
+
+    <!-- Блокирующая версия -->
+    <h2>Версия 1: синхронный цикл (блокирует)</h2>
+    <div class="panel">
+      <div class="warning">
+        ⚠️ Эта кнопка заблокирует счётчик на несколько секунд.
+      </div>
+      <div class="row">
+        <button id="sync-btn" type="button">Посчитать (блокирующая)</button>
+      </div>
+      <div class="result" id="sync-result"></div>
+    </div>
+
+    <!-- Неблокирующая версия -->
+    <h2>Версия 2: разбитый цикл через setTimeout (не блокирует)</h2>
+    <div class="panel">
+      <div class="row">
+        <button id="async-btn" type="button">Посчитать (неблокирующая)</button>
+      </div>
+      <div class="progress" id="async-progress"></div>
+      <div class="result" id="async-result"></div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
