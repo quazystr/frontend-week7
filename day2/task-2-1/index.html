@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 2-1</title>
+  </head>
+  <body>
+    <h1>Два независимых счётчика</h1>
+    <p>
+      Каждый счётчик создан через фабрику
+      <code>createCounter(start, step)</code>. У них разные <code>start</code> и
+      <code>step</code>. Действия одного не влияют на другой. Прямого доступа к
+      внутреннему <code>value</code> нет.
+    </p>
+
+    <div class="counters">
+      <div class="counter">
+        <h2>Счётчик A</h2>
+        <div class="display" id="display-a">0</div>
+        <div class="controls">
+          <button id="a-dec" type="button">−</button>
+          <button id="a-reset" type="button">Сброс</button>
+          <button id="a-inc" type="button">+</button>
+        </div>
+        <div class="meta">start = 0, step = 1</div>
+      </div>
+
+      <div class="counter">
+        <h2>Счётчик B</h2>
+        <div class="display" id="display-b">100</div>
+        <div class="controls">
+          <button id="b-dec" type="button">−</button>
+          <button id="b-reset" type="button">Сброс</button>
+          <button id="b-inc" type="button">+</button>
+        </div>
+        <div class="meta">start = 100, step = 5</div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
