@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 1-5</title>
+  </head>
+  <body>
+    <h1>Ошибка в microtask и task</h1>
+    <p>
+      Две ошибки: одна внутри <code>Promise.then</code> (микрозадача), другая
+      внутри <code>setTimeout</code> (макрозадача). Ловим каждую своим способом.
+    </p>
+
+    <div class="panel">
+      <button id="run-btn" type="button">Запустить сценарий</button>
+      <button id="clear-btn" type="button">Очистить лог</button>
+      <div class="log" id="log"></div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
