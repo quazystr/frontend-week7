@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 2-4</title>
+  </head>
+  <body>
+    <h1>Замыкание в цикле</h1>
+
+    <h2>Вариант 1: var (сломанный)</h2>
+    <p>Все кнопки выводят 5 — потому что var одна на весь цикл.</p>
+    <div id="var-buttons"></div>
+
+    <h2>Вариант 2: let (исправленный)</h2>
+    <p>
+      Каждая кнопка выводит свой номер — let создаёт новую переменную на каждую
+      итерацию.
+    </p>
+    <div id="let-buttons"></div>
+
+    <h2>Вариант 3: фабрика createHandler (исправленный)</h2>
+    <p>
+      Фабрика создаёт замыкание на аргумент index — каждая кнопка помнит свой
+      номер.
+    </p>
+    <div id="factory-buttons"></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
