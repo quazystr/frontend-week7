@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 2-3</title>
+  </head>
+  <body>
+    <h1>Ограничитель попыток</h1>
+    <p>
+      <code>createAttemptLimiter(limit)</code> возвращает объект с методами
+      <code>canTry()</code>, <code>recordFailure()</code>,
+      <code>reset()</code> и <code>getRemaining()</code>. Состояние приватное.
+    </p>
+
+    <div class="panel">
+      <div class="controls">
+        <button id="demo-btn" type="button">Демо (limit = 3)</button>
+        <button id="bounds-btn" type="button">Проверка границ</button>
+        <button id="clear-btn" type="button">Очистить лог</button>
+      </div>
+
+      <div class="note">
+        Граничные случаи: <code>limit = 0</code>, <code>limit = 1</code>,
+        <code>limit &lt; 0</code> (ошибка), вызовы после исчерпания.
+      </div>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
