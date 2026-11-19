@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 2-2</title>
+  </head>
+  <body>
+    <h1>Функция только один раз</h1>
+    <p>
+      Функция <code>createOnce(fn)</code> создаёт обёртку, которая вызывает
+      <code>fn</code> только при первом вызове. Все последующие вызовы
+      возвращают сохранённый результат без повторного выполнения
+      <code>fn</code>.
+    </p>
+
+    <div class="panel">
+      <div class="stats">
+        <div class="stat">
+          Обёртка вызвана: <strong id="wrapper-calls">0</strong> раз
+        </div>
+        <div class="stat">
+          Реальных вызовов fn: <strong id="real-calls">0</strong>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="call-btn" type="button">
+          Вызвать onceCalc(случайные аргументы)
+        </button>
+        <button id="call-with-this-btn" type="button">
+          Вызвать onceMethod.call(obj, ...)
+        </button>
+        <button id="reset-btn" type="button">Очистить лог</button>
+      </div>
+
+      <div class="note">
+        Обратите внимание: счётчик "Реальных вызовов fn" увеличивается только
+        при первом нажатии. Все последующие вызовы возвращают сохранённый
+        результат.
+      </div>
+
+      <div class="log" id="output"></div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
