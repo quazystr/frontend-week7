@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 2-5</title>
+  </head>
+  <body>
+    <h1>Освобождение ресурсов</h1>
+    <p>
+      <code>createAutoSaver(save, delay)</code> создаёт автосейвер с методами
+      <code>schedule(value)</code>, <code>flush()</code> и
+      <code>cancel()</code>. После <code>cancel()</code> старый callback не
+      выполняется.
+    </p>
+
+    <div>
+      <button id="demo-btn" type="button">Демо (delay = 1000 мс)</button>
+      <button id="test-btn" type="button">Запустить тесты</button>
+      <button id="clear-btn" type="button">Очистить лог</button>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        margin-top: 1rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
