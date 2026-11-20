@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 4-2</title>
+  </head>
+  <body>
+    <h1>throttle()</h1>
+    <p>Throttle с интервалом 500 мс. Ведущий и завершающий вызовы.</p>
+
+    <div style="margin: 1rem 0">
+      <strong>Счётчик:</strong>
+      <span id="counter" style="font-size: 1.5rem; font-weight: bold">0</span>
+      <strong>Обновлений UI:</strong>
+      <span id="updates" style="font-size: 1.5rem; font-weight: bold">0</span>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+      <button id="click-btn" type="button">+1 (ручной клик)</button>
+      <button id="auto-btn" type="button">Серия из 20 кликов</button>
+      <button id="cancel-btn" type="button">Отменить (cancel)</button>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        margin-top: 1rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
