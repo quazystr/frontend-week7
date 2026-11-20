@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 3-4</title>
+  </head>
+  <body>
+    <h1>Стрелка внутри метода</h1>
+    <p>
+      Три варианта передачи callback в setTimeout + бонус: стрелочный метод
+      объекта.
+    </p>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0">
+      <button id="btn-callback" type="button">1. Обычный callback</button>
+      <button id="btn-bind" type="button">2. Callback с bind</button>
+      <button id="btn-arrow" type="button">3. Стрелка внутри метода</button>
+      <button id="btn-arrow-method" type="button">
+        4. Стрелочный метод объекта
+      </button>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
