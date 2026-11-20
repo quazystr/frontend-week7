@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 3-5</title>
+  </head>
+  <body>
+    <h1>Контроллер с жизненным циклом</h1>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0">
+      <button id="btn-start" type="button">Start</button>
+      <button id="btn-reset" type="button">Reset</button>
+      <button id="btn-init" type="button">Init контроллер</button>
+      <button id="btn-destroy" type="button">Destroy контроллер</button>
+    </div>
+
+    <div style="margin: 1rem 0">
+      <strong>Счётчик:</strong> <span id="counter">0</span>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
