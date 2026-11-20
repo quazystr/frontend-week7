@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 4-4</title>
+  </head>
+  <body>
+    <h1>Почему setInterval плывёт</h1>
+    <p>
+      Два обратных отсчёта на 20 секунд. На середине — блокировка потока на 2500
+      мс.
+    </p>
+
+    <div style="display: flex; gap: 2rem; margin: 2rem 0; flex-wrap: wrap">
+      <div style="flex: 1; min-width: 250px">
+        <h3>Вариант 1: setInterval(1000)</h3>
+        <div
+          id="interval-display"
+          style="
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+            background: #fff3cd;
+            border-radius: 8px;
+          "
+        >
+          20
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 250px">
+        <h3>Вариант 2: deadline-based</h3>
+        <div
+          id="deadline-display"
+          style="
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+            background: #d1ecf1;
+            border-radius: 8px;
+          "
+        >
+          20
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin: 1rem 0">
+      <button
+        id="start-btn"
+        type="button"
+        style="padding: 0.75rem 1.5rem; font-size: 1rem"
+      >
+        Запустить оба таймера
+      </button>
+      <button
+        id="block-btn"
+        type="button"
+        style="padding: 0.75rem 1.5rem; font-size: 1rem; margin-left: 0.5rem"
+        disabled
+      >
+        Заблокировать поток (2500 мс)
+      </button>
+    </div>
+
+    <div style="margin: 1rem 0; text-align: center">
+      <strong>Реальное время:</strong>
+      <span id="real-time" style="font-size: 1.2rem">0.0 с</span>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        margin-top: 1rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
