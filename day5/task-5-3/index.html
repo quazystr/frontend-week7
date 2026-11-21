@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 5-3</title>
+  </head>
+  <body>
+    <h1>Защита от старых callback через runId</h1>
+    <p>
+      Каждый start() и reset() инкрементирует runId. Callback проверяет свой
+      runId — если устарел, не трогает состояние.
+    </p>
+
+    <div
+      id="display"
+      style="
+        font-size: 3rem;
+        font-weight: bold;
+        font-family: ui-monospace, monospace;
+        text-align: center;
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 8px;
+        margin: 1rem 0;
+      "
+    >
+      00:00.0
+    </div>
+
+    <div
+      style="
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      "
+    >
+      <button id="start-btn" type="button">Start</button>
+      <button id="pause-btn" type="button">Pause</button>
+      <button id="reset-btn" type="button">Reset</button>
+      <button id="test-btn" type="button">Запустить тест Reset → Start</button>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        margin-top: 1rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
