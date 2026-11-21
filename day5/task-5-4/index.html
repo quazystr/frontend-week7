@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task 5-4</title>
+  </head>
+  <body>
+    <h1>Группа обработчиков через AbortController</h1>
+    <p>Все обработчики вешаются с одним signal. Один abort() снимает их все.</p>
+
+    <div style="margin: 1rem 0">
+      <div
+        id="display"
+        style="
+          font-size: 1.5rem;
+          padding: 0.5rem;
+          background: #f5f5f5;
+          border-radius: 4px;
+        "
+      >
+        Не инициализирован
+      </div>
+      <div>Тиков: <strong id="tick-count">0</strong></div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0">
+      <button id="btn-start" type="button">Start</button>
+      <button id="btn-stop" type="button">Stop</button>
+      <button id="btn-reset" type="button">Reset</button>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0">
+      <button id="init-btn" type="button">init()</button>
+      <button id="destroy-btn" type="button">destroy()</button>
+      <button id="test-btn" type="button">Запустить тесты</button>
+    </div>
+
+    <pre
+      id="log"
+      style="
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 3rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        margin-top: 1rem;
+      "
+    ></pre>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
