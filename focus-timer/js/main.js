@@ -216,6 +216,18 @@ renderHistory();
 
 console.log("🎯 Focus Timer инициализирован.");
 
+// Возврат на вкладку — мгновенная коррекция времени
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    // Синхронизируем таймер, если он запущен
+    // Для этого нужен доступ к timer внутри controller
+    // Добавим метод sync() в controller
+    if (typeof realController.syncTimer === "function") {
+      realController.syncTimer();
+    }
+  }
+});
+
 // ==========================================
 // АВТОМАТИЧЕСКИЕ ТЕСТЫ
 // ==========================================

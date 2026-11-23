@@ -197,5 +197,11 @@ export function createController(options) {
       if (buttonName === "reset") handleReset();
       return true;
     },
+
+    syncTimer() {
+      if (timer && status === "running") {
+        timer.sync();
+      }
+    },
   };
 }
