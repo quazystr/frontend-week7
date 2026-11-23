@@ -1,13 +1,14 @@
 import { createTimer } from "./timer.js";
 
 export function createController(options) {
-  const { elements, settings } = options;
+  const { elements, settings, tasks, history } = options;
 
   let isInitialized = false;
   let status = "idle";
-  let mode = "focus"; // focus | break
+  let mode = "focus";
   let abortController = null;
   let timer = null;
+  let sessionStartMs = 0; // для фиксации длительности
 
   function setStatus(newStatus) {
     status = newStatus;
@@ -39,6 +40,18 @@ export function createController(options) {
 
   function handleFinish() {
     if (!isInitialized) return;
+
+    // Если это была фокус-сессия — добавляем запись в историю
+    if (mode === "focus") {
+      const actualDurationMs = getCurrentDurationMs();
+      history.add({
+        id: undefined, // сгенерируется внутри history
+        taskId: tasks.getSelectedId(), // может быть null
+        finishedAt: Date.now(),
+        durationMs: actualDurationMs,
+      });
+    }
+
     setStatus("done");
   }
 
@@ -60,6 +73,7 @@ export function createController(options) {
       });
     }
 
+    sessionStartMs = Date.now();
     setStatus("running");
     timer.start();
   }
@@ -71,14 +85,12 @@ export function createController(options) {
   }
 
   function onHandleReset() {
-    // Сбрасываем таймер — длительность возьмётся заново из settings при следующем start
     if (timer) {
       timer.destroy();
       timer = null;
     }
     setStatus("idle");
 
-    // Обновляем дисплей согласно текущим настройкам
     const { displayEl } = elements;
     if (displayEl) {
       displayEl.textContent = formatTime(getCurrentDurationMs());
@@ -102,7 +114,6 @@ export function createController(options) {
 
       isInitialized = true;
 
-      // Начальное отображение
       const { displayEl } = elements;
       if (displayEl) {
         displayEl.textContent = formatTime(getCurrentDurationMs());
@@ -131,6 +142,11 @@ export function createController(options) {
     getStatus: () => status,
     isInitialized: () => isInitialized,
     getMode: () => mode,
+
+    // Для тестов: программное завершение сессии
+    _simulateFinish() {
+      handleFinish();
+    },
 
     simulateClick(buttonName) {
       if (!isInitialized) return false;

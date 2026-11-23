@@ -1,13 +1,22 @@
 import { createController } from "./controller.js";
 import { createSettings } from "./settings.js";
+import { createStorage } from "./storage.js";
+import { createTasks } from "./tasks.js";
+import { createHistory } from "./history.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ==========================================
+// ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ
+// ==========================================
+const storage = createStorage();
+const settings = createSettings({ storage });
+const tasks = createTasks({ storage });
+const history = createHistory({ storage });
+
+// ==========================================
 // РЕАЛЬНЫЙ ИНТЕРФЕЙС
 // ==========================================
-const settings = createSettings();
-
 const realElements = {
   startBtn: document.getElementById("start-btn"),
   pauseBtn: document.getElementById("pause-btn"),
@@ -19,8 +28,14 @@ const realElements = {
 const focusInput = document.getElementById("focus-input");
 const breakInput = document.getElementById("break-input");
 const errorEl = document.getElementById("settings-error");
+const taskInput = document.getElementById("task-input");
+const taskAddBtn = document.getElementById("task-add-btn");
+const tasksList = document.getElementById("tasks-list");
+const historyList = document.getElementById("history-list");
+const historyCount = document.getElementById("history-count");
+const historyClearBtn = document.getElementById("history-clear-btn");
 
-// Инициализируем поля ввода из настроек
+// --- Настройки ---
 focusInput.value = String(settings.getFocusMinutes());
 breakInput.value = String(settings.getBreakMinutes());
 
@@ -34,10 +49,9 @@ function showError(message) {
   }
 }
 
-function handleInputChange(input, setter) {
+function handleSettingInput(input, setter) {
   const raw = input.value.trim();
   const value = raw === "" ? NaN : Number(raw);
-
   const ok = setter(value);
   if (ok) {
     input.classList.remove("settings__input_invalid");
@@ -49,20 +63,153 @@ function handleInputChange(input, setter) {
   }
 }
 
-focusInput.addEventListener("input", () => {
-  handleInputChange(focusInput, (v) => settings.setFocusMinutes(v));
+focusInput.addEventListener("input", () =>
+  handleSettingInput(focusInput, (v) => settings.setFocusMinutes(v)),
+);
+breakInput.addEventListener("input", () =>
+  handleSettingInput(breakInput, (v) => settings.setBreakMinutes(v)),
+);
+
+// --- Задачи ---
+function renderTasks() {
+  const all = tasks.getAll();
+  const selectedId = tasks.getSelectedId();
+  tasksList.innerHTML = "";
+
+  if (all.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "tasks__empty";
+    empty.textContent = "Нет задач. Добавьте первую.";
+    tasksList.appendChild(empty);
+    return;
+  }
+
+  for (const task of all) {
+    const li = document.createElement("li");
+    li.className =
+      "tasks__item" + (task.id === selectedId ? " tasks__item_selected" : "");
+    li.dataset.id = task.id;
+
+    const title = document.createElement("span");
+    title.className = "tasks__item-title";
+    title.textContent = task.title;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "tasks__item-remove";
+    removeBtn.type = "button";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Удалить задачу";
+
+    li.appendChild(title);
+    li.appendChild(removeBtn);
+    tasksList.appendChild(li);
+  }
+}
+
+function addTask() {
+  const value = taskInput.value.trim();
+  if (!value) return;
+  tasks.add(value);
+  taskInput.value = "";
+  renderTasks();
+}
+
+taskAddBtn.addEventListener("click", addTask);
+taskInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addTask();
 });
 
-breakInput.addEventListener("input", () => {
-  handleInputChange(breakInput, (v) => settings.setBreakMinutes(v));
+tasksList.addEventListener("click", (e) => {
+  const removeBtn = e.target.closest(".tasks__item-remove");
+  if (removeBtn) {
+    const li = removeBtn.closest(".tasks__item");
+    tasks.remove(li.dataset.id);
+    renderTasks();
+    return;
+  }
+  const li = e.target.closest(".tasks__item");
+  if (li) {
+    tasks.select(li.dataset.id);
+    renderTasks();
+  }
 });
 
-// Контроллер
+tasks.onChange = renderTasks;
+
+// --- История ---
+function formatHistoryDate(timestamp) {
+  const d = new Date(timestamp);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDuration(ms) {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}м ${String(seconds).padStart(2, "0")}с`;
+}
+
+function renderHistory() {
+  const all = history.getAll();
+  historyList.innerHTML = "";
+  historyCount.textContent = `${all.length} записей`;
+
+  if (all.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "history__empty";
+    empty.textContent = "История пуста. Завершите первую сессию.";
+    historyList.appendChild(empty);
+    return;
+  }
+
+  for (const entry of all) {
+    const li = document.createElement("li");
+    li.className = "history__item";
+
+    const taskSpan = document.createElement("span");
+    taskSpan.className = "history__item-task";
+    if (entry.taskId) {
+      const task = tasks.getById(entry.taskId);
+      if (task) {
+        taskSpan.textContent = task.title;
+      } else {
+        taskSpan.textContent = "(задача удалена)";
+        taskSpan.classList.add("history__item-task_no-task");
+      }
+    } else {
+      taskSpan.textContent = "Без задачи";
+      taskSpan.classList.add("history__item-task_no-task");
+    }
+
+    const meta = document.createElement("span");
+    meta.className = "history__item-meta";
+    meta.innerHTML = `<span>${formatDuration(entry.durationMs)}</span><span>${formatHistoryDate(entry.finishedAt)}</span>`;
+
+    li.appendChild(taskSpan);
+    li.appendChild(meta);
+    historyList.appendChild(li);
+  }
+}
+
+historyClearBtn.addEventListener("click", () => {
+  history.clear();
+  renderHistory();
+});
+
+history.onChange = renderHistory;
+
+// --- Контроллер ---
 const realController = createController({
   elements: realElements,
   settings,
+  tasks,
+  history,
 });
 realController.init();
+
+// Первичная отрисовка
+renderTasks();
+renderHistory();
 
 console.log("🎯 Focus Timer инициализирован.");
 
@@ -70,9 +217,9 @@ console.log("🎯 Focus Timer инициализирован.");
 // АВТОМАТИЧЕСКИЕ ТЕСТЫ
 // ==========================================
 async function runTests() {
-  console.log("\n=== Тесты Task 6.4: Настройки и debounce ===");
+  console.log("\n=== Тесты Task 6.5: Задача и история ===");
 
-  // In-memory storage для изоляции тестов
+  // In-memory storage для изоляции
   const memoryStorage = {
     _data: {},
     getItem(key) {
@@ -90,125 +237,254 @@ async function runTests() {
   };
 
   // ==========================================
-  // ТЕСТ 1: Валидация границ
+  // ТЕСТ 1: Добавление и удаление задач
   // ==========================================
-  memoryStorage.clear(); // ✅ Чистое состояние
-  const s1 = createSettings({ storage: memoryStorage });
-  console.assert(s1.setFocusMinutes(1) === true, "1 минута — валидно");
-  console.assert(s1.setFocusMinutes(90) === true, "90 минут — валидно");
-  console.assert(s1.setFocusMinutes(0) === false, "0 минут — невалидно");
-  console.assert(s1.setFocusMinutes(91) === false, "91 минута — невалидно");
-  console.assert(s1.setFocusMinutes(-5) === false, "-5 минут — невалидно");
-  console.assert(
-    s1.setFocusMinutes(1.5) === false,
-    "1.5 минуты — невалидно (не целое)",
-  );
-  console.assert(s1.setFocusMinutes(NaN) === false, "NaN — невалидно");
-  console.assert(s1.setFocusMinutes("abc") === false, '"abc" — невалидно');
+  memoryStorage.clear();
+  const testStorage = {
+    getItem: (k) => memoryStorage.getItem(k),
+    setItem: (k, v) => memoryStorage.setItem(k, v),
+    removeItem: (k) => memoryStorage.removeItem(k),
+  };
+  const t1 = createTasks({ storage: testStorage });
 
-  s1.setFocusMinutes(25);
-  s1.setFocusMinutes(999); // невалидно
-  console.assert(
-    s1.getFocusMinutes() === 25,
-    "После невалидного ввода значение не изменилось",
-  );
+  const task1 = t1.add("Первая задача");
+  const task2 = t1.add("Вторая задача");
+  console.assert(task1 !== null && task2 !== null, "Задачи добавлены");
+  console.assert(t1.getAll().length === 2, "Две задачи в списке");
+  console.assert(t1.getById(task1.id) === task1, "getById работает");
 
-  // ==========================================
-  // ТЕСТ 2: Debounce работает
-  // ==========================================
-  memoryStorage.clear(); // ✅ Чистое состояние
-  const s2 = createSettings({ storage: memoryStorage });
-  s2.setFocusMinutes(10);
-  s2.setFocusMinutes(20);
-  s2.setFocusMinutes(30);
+  t1.remove(task1.id);
+  console.assert(t1.getAll().length === 1, "После удаления одна задача");
   console.assert(
-    memoryStorage.getItem("focus-timer:settings") === null,
-    "Debounce: сразу после вызовов storage пуст",
+    t1.getById(task1.id) === null,
+    "Удалённая задача не находится",
   );
 
-  await s2._waitDebounce();
-  const saved = JSON.parse(memoryStorage.getItem("focus-timer:settings"));
-  console.assert(
-    saved.focusMinutes === 30,
-    `Debounce: сохранилось последнее значение (30), получено ${saved?.focusMinutes}`,
-  );
+  // Пустой title не добавляется
+  const emptyTask = t1.add("   ");
+  console.assert(emptyTask === null, "Пустой title не добавляется");
+  console.assert(t1.getAll().length === 1, "Список не изменился");
 
   // ==========================================
-  // ТЕСТ 3: Reset отменяет debounce
+  // ТЕСТ 2: Выбор задачи
   // ==========================================
-  memoryStorage.clear(); // ✅ ИСПРАВЛЕНИЕ: чистое состояние, чтобы reset() вернул дефолт 25
-  const s3 = createSettings({ storage: memoryStorage });
-  s3.setFocusMinutes(40);
-  s3.setFocusMinutes(50); // ожидающее сохранение
-  const result = s3.reset();
+  const t2 = createTasks({ storage: testStorage });
+  memoryStorage.clear();
+  const ta = t2.add("A");
+  const tb = t2.add("B");
+
+  console.assert(t2.getSelectedId() === null, "Изначально ничего не выбрано");
+  console.assert(t2.select(ta.id) === true, "select возвращает true");
+  console.assert(t2.getSelectedId() === ta.id, "Выбрана задача A");
+  console.assert(t2.select(tb.id) === true, "Переключение на B");
+  console.assert(t2.getSelectedId() === tb.id, "Выбрана задача B");
+  console.assert(t2.select(null) === true, "Снятие выбора");
+  console.assert(t2.getSelectedId() === null, "После select(null) выбор снят");
   console.assert(
-    result.focusMinutes === 25,
-    `Reset вернул значение по умолчанию (25), получено ${result.focusMinutes}`,
+    t2.select("несуществующий-id") === false,
+    "select несуществующей задачи = false",
   );
-  await s3._waitDebounce();
-  const afterReset = memoryStorage.getItem("focus-timer:settings");
+
+  // Удаление выбранной задачи снимает выбор
+  t2.select(ta.id);
+  t2.remove(ta.id);
   console.assert(
-    afterReset === null,
-    "После reset() ожидающее сохранение отменилось — storage должен остаться пустым",
+    t2.getSelectedId() === null,
+    "Удаление выбранной задачи снимает выбор",
   );
 
   // ==========================================
-  // ТЕСТ 4: Чтение из localStorage при создании
+  // ТЕСТ 3: Задачи сохраняются через debounce
   // ==========================================
-  memoryStorage.clear(); // ✅ Чистое состояние перед заполнением
-  memoryStorage.setItem(
-    "focus-timer:settings",
-    JSON.stringify({ focusMinutes: 42, breakMinutes: 7 }),
-  );
-  const s4 = createSettings({ storage: memoryStorage });
+  memoryStorage.clear();
+  const t3 = createTasks({ storage: testStorage });
+  t3.add("Тестовая");
   console.assert(
-    s4.getFocusMinutes() === 42,
-    "При создании читаются сохранённые настройки",
+    memoryStorage.getItem("focus-timer:tasks") === null,
+    "Сразу после add storage пуст (debounce)",
+  );
+  await t3._waitDebounce();
+  const savedTasks = JSON.parse(memoryStorage.getItem("focus-timer:tasks"));
+  console.assert(
+    savedTasks.tasks.length === 1,
+    "После debounce задача сохранена",
   );
   console.assert(
-    s4.getBreakMinutes() === 7,
-    "При создании читаются сохранённые настройки",
+    savedTasks.tasks[0].title === "Тестовая",
+    "Title сохранён корректно",
   );
 
   // ==========================================
-  // ТЕСТ 5: getFocusMs / getBreakMs
+  // ТЕСТ 4: Добавление записи в историю
   // ==========================================
-  // s4 уже имеет focusMinutes=42, breakMinutes=7
+  memoryStorage.clear();
+  const h1 = createHistory({ storage: testStorage });
+  const entry = {
+    id: "session-1",
+    taskId: "task-1",
+    finishedAt: Date.now(),
+    durationMs: 25 * 60 * 1000,
+  };
+  console.assert(h1.add(entry) === true, "add возвращает true");
+  console.assert(h1.getCount() === 1, "Одна запись");
+  console.assert(h1.getAll()[0].id === "session-1", "Запись корректная");
+
+  // ==========================================
+  // ТЕСТ 5: Лимит 50 записей
+  // ==========================================
+  memoryStorage.clear();
+  const h2 = createHistory({ storage: testStorage });
+  for (let i = 0; i < 60; i++) {
+    h2.add({
+      id: `session-${i}`,
+      taskId: null,
+      finishedAt: Date.now() + i,
+      durationMs: 1000,
+    });
+  }
   console.assert(
-    s4.getFocusMs() === 42 * 60 * 1000,
-    "getFocusMs возвращает миллисекунды",
+    h2.getCount() === 50,
+    `Лимит 50 записей, получено ${h2.getCount()}`,
+  );
+  // Самые свежие — в начале
+  console.assert(h2.getAll()[0].id === "session-59", "Свежая запись первая");
+  // Старые (0-9) должны быть вытеснены
+  const ids = h2.getAll().map((e) => e.id);
+  console.assert(!ids.includes("session-0"), "session-0 вытеснен");
+  console.assert(!ids.includes("session-9"), "session-9 вытеснен");
+  console.assert(ids.includes("session-10"), "session-10 остался");
+
+  // ==========================================
+  // ТЕСТ 6: Валидация при чтении + сортировка по свежести
+  // ==========================================
+  memoryStorage.clear();
+  const h3 = createHistory({ storage: testStorage });
+  // Разносим finishedAt, чтобы сортировка дала предсказуемый результат
+  const baseTime = Date.now();
+  const corrupted = JSON.stringify([
+    { id: "good-1", taskId: "t1", finishedAt: baseTime, durationMs: 1000 },
+    null, // невалидно
+    {
+      id: "good-2",
+      taskId: null,
+      finishedAt: baseTime + 1000,
+      durationMs: 2000,
+    },
+    { id: "", taskId: "t1", finishedAt: baseTime, durationMs: 1000 }, // пустой id
+    {
+      id: "bad-duration",
+      taskId: "t1",
+      finishedAt: baseTime,
+      durationMs: -100,
+    }, // отрицательная длительность
+    { id: "bad-date", taskId: "t1", finishedAt: NaN, durationMs: 1000 }, // NaN finishedAt
+    "not an object", // строка вместо объекта
+    {
+      id: "good-3",
+      taskId: "t2",
+      finishedAt: baseTime + 2000,
+      durationMs: 3000,
+    },
+  ]);
+  h3._writeRaw(corrupted);
+  h3._reload(); // перечитываем из storage с валидацией и сортировкой
+  const validEntries = h3.getAll();
+  console.assert(
+    validEntries.length === 3,
+    `Валидных записей: 3, получено ${validEntries.length}`,
   );
   console.assert(
-    s4.getBreakMs() === 7 * 60 * 1000,
-    "getBreakMs возвращает миллисекунды",
+    validEntries[0].id === "good-3",
+    `Первая — good-3 (самый свежий finishedAt), получено ${validEntries[0]?.id}`,
+  );
+  console.assert(
+    validEntries[1].id === "good-2",
+    `Вторая — good-2, получено ${validEntries[1]?.id}`,
+  );
+  console.assert(
+    validEntries[2].id === "good-1",
+    `Третья — good-1, получено ${validEntries[2]?.id}`,
   );
 
   // ==========================================
-  // ТЕСТ 6: Некорректное значение не ломает текущую сессию
+  // ТЕСТ 7: Интеграция — завершённая сессия добавляет запись
   // ==========================================
-  memoryStorage.clear(); // ✅ Чистое состояние
-  const s6 = createSettings({ storage: memoryStorage });
-  s6.setFocusMinutes(42);
-  s6.setFocusMinutes("invalid"); // ошибка
+  memoryStorage.clear();
+  const intSettings = createSettings({ storage: testStorage });
+  const intTasks = createTasks({ storage: testStorage });
+  const intHistory = createHistory({ storage: testStorage });
+
+  const mockBtn = document.createElement("button");
+  const mockDisplay = document.createElement("div");
+  const mockStatus = document.createElement("div");
+  const intController = createController({
+    elements: {
+      startBtn: mockBtn,
+      pauseBtn: mockBtn,
+      resetBtn: mockBtn,
+      displayEl: mockDisplay,
+      statusEl: mockStatus,
+    },
+    settings: intSettings,
+    tasks: intTasks,
+    history: intHistory,
+  });
+  intController.init();
+
+  // Добавляем задачу и выбираем её
+  const intTask = intTasks.add("Тестовая задача");
+  intTasks.select(intTask.id);
+
+  // Имитируем завершение сессии
+  intController._simulateFinish();
+
+  const historyEntries = intHistory.getAll();
   console.assert(
-    s6.getFocusMinutes() === 42,
-    "После ошибки состояние не изменилось",
+    historyEntries.length === 1,
+    `После завершения сессии в истории 1 запись, получено ${historyEntries.length}`,
   );
-  console.assert(s6.getError() !== null, "После ошибки есть сообщение");
-  s6.clearError();
-  console.assert(s6.getError() === null, "clearError очищает ошибку");
+  console.assert(
+    historyEntries[0].taskId === intTask.id,
+    "taskId совпадает с выбранной задачей",
+  );
+  console.assert(
+    historyEntries[0].durationMs === intSettings.getFocusMs(),
+    "durationMs совпадает с настройками фокуса",
+  );
+  console.assert(
+    typeof historyEntries[0].finishedAt === "number",
+    "finishedAt — число",
+  );
+  console.assert(typeof historyEntries[0].id === "string", "id — строка");
+
+  // Завершаем ещё одну сессию без выбранной задачи
+  intTasks.select(null);
+  intController._simulateFinish();
+  const entries2 = intHistory.getAll();
+  console.assert(entries2.length === 2, "Вторая сессия добавлена");
+  console.assert(
+    entries2[0].taskId === null,
+    "taskId = null, если задача не выбрана",
+  );
+
+  intController.destroy();
 
   // ==========================================
-  // ТЕСТ 7: Повреждённый JSON в storage не ломает создание
+  // ТЕСТ 8: Повреждённый JSON не ломает задачи
   // ==========================================
-  memoryStorage.clear(); // ✅ Чистое состояние
-  memoryStorage.setItem("focus-timer:settings", "{invalid json");
-  const s7 = createSettings({ storage: memoryStorage });
+  memoryStorage.clear();
+  memoryStorage.setItem("focus-timer:tasks", "{broken json");
+  const tBad = createTasks({ storage: testStorage });
   console.assert(
-    s7.getFocusMinutes() === 25,
-    "Повреждённый JSON — используются defaults",
+    tBad.getAll().length === 0,
+    "Повреждённый JSON — пустой список задач",
+  );
+  console.assert(
+    tBad.getSelectedId() === null,
+    "Повреждённый JSON — нет выбранной задачи",
   );
 
-  console.log("✅ Все тесты Task 6.4 пройдены!");
+  console.log("✅ Все тесты Task 6.5 пройдены!");
 }
+
 runTests();
