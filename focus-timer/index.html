@@ -2,10 +2,32 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Focus Timer</title>
+    <title>Focus Timer: Day 6.3</title>
     <link rel="stylesheet" href="css/main.css" />
   </head>
   <body>
+    <section>
+      <h2>Рабочий интерфейс</h2>
+
+      <div class="display" id="display">25:00</div>
+
+      <p class="status">
+        <span class="status__label">Статус:</span>
+        <span class="status__value" id="status">idle</span>
+      </p>
+
+      <div class="controls">
+        <button id="start-btn" type="button">Start</button>
+        <button id="pause-btn" type="button">Pause</button>
+        <button id="reset-btn" type="button">Reset</button>
+      </div>
+
+      <div class="controls controls_lifecycle">
+        <button id="init-btn" type="button">init()</button>
+        <button id="destroy-btn" type="button">destroy()</button>
+      </div>
+    </section>
+
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

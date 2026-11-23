@@ -1,34 +1,23 @@
 .controls {
   display: flex;
-  gap: var(--space-m);
-  align-items: flex-end;
-  margin-bottom: var(--space-l);
+  gap: var(--space-s);
+  justify-content: center;
   flex-wrap: wrap;
+  margin: var(--space-m) 0;
 }
 
-.controls .field {
-  flex: 1;
-  min-width: 200px;
-  margin-bottom: 0;
+.controls_lifecycle {
+  margin-top: var(--space-l);
+  padding-top: var(--space-m);
+  border-top: 1px dashed var(--color-border);
 }
 
-.refresh-button {
-  padding: var(--space-s) var(--space-m);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-m);
-  cursor: pointer;
-  font-size: var(--font-size-m);
-  transition: background-color 0.2s;
-  white-space: nowrap;
+.controls_lifecycle button {
+  border-color: var(--color-border-secondary);
+  color: var(--color-secondary);
 }
 
-.refresh-button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.refresh-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.controls_lifecycle button:hover:not(:disabled) {
+  background: var(--color-light);
+  border-color: var(--color-secondary);
 }

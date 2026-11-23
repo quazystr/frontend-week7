@@ -1,111 +1,126 @@
-import { createTimer } from "./timer.js";
+import { createController } from "./controller.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// ==========================================
+// ЧАСТЬ 1: РЕАЛЬНЫЙ ИНТЕРФЕЙС
+// ==========================================
+const realElements = {
+  startBtn: document.getElementById("start-btn"),
+  pauseBtn: document.getElementById("pause-btn"),
+  resetBtn: document.getElementById("reset-btn"),
+  displayEl: document.getElementById("display"),
+  statusEl: document.getElementById("status"),
+};
+
+const realController = createController({
+  elements: realElements,
+  durationMs: 25 * 60 * 1000,
+});
+
+document.getElementById("init-btn").addEventListener("click", () => {
+  const ok = realController.init();
+  console.log(ok ? "✅ init() выполнен" : "⚠️ init() проигнорирован");
+});
+
+document.getElementById("destroy-btn").addEventListener("click", () => {
+  const ok = realController.destroy();
+  console.log(ok ? "🛑 destroy() выполнен" : "⚠️ destroy() проигнорирован");
+});
+
+realController.init();
+console.log("🎯 Реальный контроллер инициализирован.");
+
+// ==========================================
+// ЧАСТЬ 2: АВТОМАТИЧЕСКИЕ ТЕСТЫ
+// ==========================================
 async function runTests() {
-  console.log("=== Тесты Task 6.2: Точное время ===");
+  console.log("\n=== Тесты Task 6.3 ===");
 
-  // Тест 1: Частота обновления ~4 раза в секунду (250 мс)
-  let ticks1 = 0;
-  const timer1 = createTimer({
-    durationMs: 2000,
-    onTick: () => {
-      ticks1 += 1;
-    },
-    onFinish: () => {},
-  });
-  timer1.start();
-  await delay(600);
-  timer1.destroy();
+  const startBtn = document.createElement("button");
+  const pauseBtn = document.createElement("button");
+  const resetBtn = document.createElement("button");
+  const displayEl = document.createElement("div");
+  const statusEl = document.createElement("div");
+  const elements = { startBtn, pauseBtn, resetBtn, displayEl, statusEl };
+
+  const controller = createController({ elements, durationMs: 1000 });
+
   console.assert(
-    ticks1 >= 2 && ticks1 <= 4,
-    `Частота тиков: ожидали 2-4 за 600 мс, получили ${ticks1}`,
+    controller.isInitialized() === false,
+    "До init() не инициализирован",
+  );
+  console.assert(controller.init() === true, "init() возвращает true");
+  console.assert(
+    controller.isInitialized() === true,
+    "После init() инициализирован",
+  );
+  console.assert(controller.getStatus() === "idle", "Статус = idle");
+
+  console.assert(
+    controller.init() === false,
+    "Повторный init() возвращает false",
   );
 
-  // Тест 2: onFinish вызывается ровно один раз
-  let finishCount = 0;
-  const timer2 = createTimer({
-    durationMs: 300,
-    onTick: () => {},
-    onFinish: () => {
-      finishCount += 1;
-    },
-  });
-  timer2.start();
-  // ✅ ИСПРАВЛЕНИЕ: увеличили с 500 до 1000 мс, чтобы учесть jitter браузера
-  await delay(1000);
-  console.assert(
-    finishCount === 1,
-    `onFinish должен быть вызван 1 раз, а не ${finishCount}`,
-  );
-
-  // Манипуляции после завершения — ни одна не должна вызвать onFinish повторно
-  timer2.sync(); // isRunning=false → ничего не делает
-  timer2.start(); // remainingMs=0 → ничего не делает (новая защита!)
-  timer2.pause(); // isRunning=false → ничего не делает
-  console.assert(
-    finishCount === 1,
-    `После манипуляций onFinish не должен вызываться повторно. Получили: ${finishCount}`,
-  );
-  timer2.destroy();
-
-  // Тест 3: Мгновенная коррекция после блокировки потока + sync()
-  let lastRemaining = 0;
-  const timer3 = createTimer({
-    durationMs: 2000,
-    onTick: (ms) => {
-      lastRemaining = ms;
-    },
-    onFinish: () => {},
-  });
-  timer3.start();
+  controller.simulateClick("start");
   await delay(100);
+  console.assert(controller.getStatus() === "running", "После start = running");
 
-  const blockStart = Date.now();
-  while (Date.now() - blockStart < 800) {
-    /* busy loop */
-  }
+  controller.simulateClick("pause");
+  console.assert(controller.getStatus() === "paused", "После pause = paused");
 
-  timer3.sync();
+  controller.simulateClick("reset");
+  console.assert(controller.getStatus() === "idle", "После reset = idle");
 
+  controller.simulateClick("start");
+  await delay(100);
   console.assert(
-    lastRemaining > 900 && lastRemaining < 1300,
-    `После блокировки и sync() остаток должен быть ~1100 мс. Получили: ${lastRemaining}`,
-  );
-  timer3.destroy();
-
-  // Тест 4: start() после завершения не запускает таймер заново
-  let restartFinishCount = 0;
-  const timer4 = createTimer({
-    durationMs: 200,
-    onTick: () => {},
-    onFinish: () => {
-      restartFinishCount += 1;
-    },
-  });
-  timer4.start();
-  await delay(500); // Ждём завершения
-  console.assert(restartFinishCount === 1, `Таймер завершился 1 раз`);
-
-  // Пытаемся запустить снова без reset() — не должно сработать
-  timer4.start();
-  await delay(300);
-  console.assert(
-    restartFinishCount === 1,
-    `start() после завершения без reset() не должен вызывать onFinish повторно. Получили: ${restartFinishCount}`,
+    controller.getStatus() === "running",
+    "Перед destroy = running",
   );
 
-  // А вот после reset() — должен запуститься и завершиться снова
-  timer4.reset();
-  timer4.start();
+  console.assert(controller.destroy() === true, "destroy() возвращает true");
+  console.assert(
+    controller.isInitialized() === false,
+    "После destroy() не инициализирован",
+  );
+  console.assert(controller.getStatus() === "idle", "После destroy() = idle");
+
+  console.assert(
+    controller.simulateClick("start") === false,
+    "simulateClick после destroy = false",
+  );
+  console.assert(controller.getStatus() === "idle", "Статус остался idle");
+
+  startBtn.click();
+  await delay(100);
+  console.assert(
+    controller.getStatus() === "idle",
+    "Реальный клик после destroy не работает",
+  );
+
+  console.assert(controller.destroy() === false, "Повторный destroy = false");
+
+  console.assert(controller.init() === true, "После destroy init() работает");
+  controller.simulateClick("start");
+  await delay(100);
+  console.assert(
+    controller.getStatus() === "running",
+    "После повторного init start работает",
+  );
+  controller.destroy();
+
+  const controller2 = createController({ elements, durationMs: 300 });
+  controller2.init();
+  controller2.simulateClick("start");
+  controller2.destroy();
   await delay(500);
   console.assert(
-    restartFinishCount === 2,
-    `После reset() + start() таймер должен завершиться ещё раз. Получили: ${restartFinishCount}`,
+    controller2.getStatus() === "idle",
+    "Поздние callback не влияют",
   );
-  timer4.destroy();
 
-  console.log("✅ Все тесты Task 6.2 пройдены!");
+  console.log("✅ Все тесты Task 6.3 пройдены!");
 }
 
 runTests();
