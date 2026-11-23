@@ -1,24 +1,42 @@
 import { createTimer } from "./timer.js";
 
 export function createController(options) {
-  const { elements, settings, tasks, history } = options;
+  const { elements, settings, tasks, history, announcer } = options;
 
   let isInitialized = false;
   let status = "idle";
   let mode = "focus";
   let abortController = null;
   let timer = null;
-  let sessionStartMs = 0; // для фиксации длительности
+  let sessionStartMs = 0;
 
   function setStatus(newStatus) {
+    const oldStatus = status;
     status = newStatus;
     updateUI();
+
+    // Анонс для screen reader при смене статуса
+    if (announcer && oldStatus !== newStatus) {
+      announceStatus(newStatus);
+    }
+  }
+
+  function announceStatus(newStatus) {
+    if (!announcer) return;
+    const messages = {
+      idle: "Таймер сброшен",
+      running: "Сессия начата",
+      paused: "Сессия на паузе",
+      done: "Сессия завершена",
+    };
+    announcer.textContent = messages[newStatus] || newStatus;
   }
 
   function updateUI() {
     if (!isInitialized) return;
 
-    const { displayEl, statusEl, startBtn, pauseBtn, resetBtn } = elements;
+    const { displayEl, statusEl, startBtn, pauseBtn, resetBtn, timeEl } =
+      elements;
 
     if (statusEl) statusEl.textContent = status;
     if (startBtn) startBtn.disabled = status === "running";
@@ -32,21 +50,30 @@ export function createController(options) {
 
   function handleTick(remainingMs) {
     if (!isInitialized) return;
-    const { displayEl } = elements;
+    const { displayEl, timeEl } = elements;
+
     if (displayEl) {
       displayEl.textContent = formatTime(remainingMs);
+    }
+
+    // Обновляем <time> для семантики (не озвучивается, т.к. visually-hidden)
+    if (timeEl) {
+      const totalSeconds = Math.floor(remainingMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      timeEl.setAttribute("datetime", `PT${minutes}M${seconds}S`);
+      timeEl.textContent = `${minutes} минут ${seconds} секунд`;
     }
   }
 
   function handleFinish() {
     if (!isInitialized) return;
 
-    // Если это была фокус-сессия — добавляем запись в историю
     if (mode === "focus") {
       const actualDurationMs = getCurrentDurationMs();
       history.add({
-        id: undefined, // сгенерируется внутри history
-        taskId: tasks.getSelectedId(), // может быть null
+        id: undefined,
+        taskId: tasks.getSelectedId(),
         finishedAt: Date.now(),
         durationMs: actualDurationMs,
       });
@@ -91,9 +118,17 @@ export function createController(options) {
     }
     setStatus("idle");
 
-    const { displayEl } = elements;
+    const { displayEl, timeEl } = elements;
     if (displayEl) {
       displayEl.textContent = formatTime(getCurrentDurationMs());
+    }
+    if (timeEl) {
+      const durationMs = getCurrentDurationMs();
+      const totalSeconds = Math.floor(durationMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      timeEl.setAttribute("datetime", `PT${minutes}M${seconds}S`);
+      timeEl.textContent = `${minutes} минут ${seconds} секунд`;
     }
   }
 
@@ -114,9 +149,17 @@ export function createController(options) {
 
       isInitialized = true;
 
-      const { displayEl } = elements;
+      const { displayEl, timeEl } = elements;
       if (displayEl) {
         displayEl.textContent = formatTime(getCurrentDurationMs());
+      }
+      if (timeEl) {
+        const durationMs = getCurrentDurationMs();
+        const totalSeconds = Math.floor(durationMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        timeEl.setAttribute("datetime", `PT${minutes}M${seconds}S`);
+        timeEl.textContent = `${minutes} минут ${seconds} секунд`;
       }
       updateUI();
       return true;
@@ -143,7 +186,6 @@ export function createController(options) {
     isInitialized: () => isInitialized,
     getMode: () => mode,
 
-    // Для тестов: программное завершение сессии
     _simulateFinish() {
       handleFinish();
     },

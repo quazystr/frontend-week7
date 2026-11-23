@@ -2,17 +2,22 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Focus Timer</title>
+    <title>Focus Timer: Day 6.6</title>
     <link rel="stylesheet" href="css/main.css" />
   </head>
   <body>
-    <h1>Focus Timer: Задача и история</h1>
+    <h1>Focus Timer</h1>
     <p>Автоматические тесты — в консоли (F12).</p>
 
     <section>
       <h2>Таймер</h2>
 
-      <div class="display" id="display">25:00</div>
+      <div class="display" id="display" aria-hidden="true">25:00</div>
+
+      <!-- Семантический элемент <time> для машинного чтения -->
+      <time id="display-time" class="visually-hidden" datetime="PT25M"
+        >25 минут 0 секунд</time
+      >
 
       <p class="status">
         <span class="status__label">Статус:</span>
@@ -26,10 +31,20 @@
       </div>
     </section>
 
+    <!-- Регион для анонсов screen reader (не виден визуально) -->
+    <div
+      id="announcer"
+      class="visually-hidden"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
     <section class="tasks">
       <h2 class="tasks__title">Задачи</h2>
 
       <div class="tasks__add-row">
+        <label for="task-input" class="visually-hidden">Новая задача:</label>
         <input
           class="tasks__input"
           id="task-input"
@@ -90,6 +105,7 @@
       <div
         class="settings__error settings__error_hidden"
         id="settings-error"
+        role="alert"
       ></div>
     </section>
 

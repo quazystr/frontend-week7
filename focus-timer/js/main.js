@@ -23,8 +23,10 @@ const realElements = {
   resetBtn: document.getElementById("reset-btn"),
   displayEl: document.getElementById("display"),
   statusEl: document.getElementById("status"),
+  timeEl: document.getElementById("display-time"),
 };
 
+const announcer = document.getElementById("announcer");
 const focusInput = document.getElementById("focus-input");
 const breakInput = document.getElementById("break-input");
 const errorEl = document.getElementById("settings-error");
@@ -204,6 +206,7 @@ const realController = createController({
   settings,
   tasks,
   history,
+  announcer,
 });
 realController.init();
 
