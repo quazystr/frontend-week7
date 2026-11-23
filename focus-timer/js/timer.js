@@ -1,58 +1,56 @@
 /**
  * Модуль timer.js
  * Фабрика createTimer(options).
- * Управляет логикой обратного отсчета. Не знает ничего о DOM или localStorage.
+ * Обновление не чаще 4 раз в секунду (250 мс), мгновенная коррекция через sync(),
+ * гарантия однократного вызова onFinish.
  */
 
 export function createTimer(options) {
   const { durationMs, onTick, onFinish } = options;
 
-  // Приватное состояние замыкания
+  // Приватное состояние
   let timeoutId = null;
   let deadline = null;
   let remainingMs = durationMs;
   let runId = 0;
   let isRunning = false;
+  let hasFinished = false; // Гарантия однократного вызова onFinish
 
-  // Внутренняя функция тика
   function tick(currentRunId) {
-    // 1. Защита от старого callback (если был reset или новый start)
-    if (currentRunId !== runId) {
-      return;
-    }
-
+    // 1. Защита от устаревшего цикла
+    if (currentRunId !== runId) return;
     // 2. Защита от вызова в паузе
-    if (!isRunning) {
-      return;
-    }
+    if (!isRunning) return;
 
-    // 3. Вычисляем точное оставшееся время от deadline
+    // 3. Точный расчет от deadline
     remainingMs = Math.max(0, deadline - Date.now());
 
-    // 4. Сообщаем внешнему миру
+    // 4. Обновление интерфейса
     onTick(remainingMs);
 
-    // 5. Проверка завершения
+    // 5. Завершение
     if (remainingMs <= 0) {
       isRunning = false;
       timeoutId = null;
-      if (onFinish) {
-        onFinish();
+      if (!hasFinished) {
+        hasFinished = true;
+        if (onFinish) onFinish();
       }
       return;
     }
 
-    // 6. Планируем следующий тик (100 мс для плавности UI без перегрузки Event Loop)
-    timeoutId = setTimeout(() => tick(currentRunId), 100);
+    // 6. Планируем следующий тик: 1000 мс / 4 = 250 мс
+    timeoutId = setTimeout(() => tick(currentRunId), 250);
   }
 
-  // Публичный API
   return {
     start() {
-      if (isRunning) return; // Защита от двойного запуска
+      if (isRunning) return;
+      if (remainingMs <= 0) return;
 
-      runId += 1; // Инкрементируем, убивая все старые циклы
+      runId += 1;
       isRunning = true;
+      hasFinished = false; // Сбрасываем флаг при новом запуске
       deadline = Date.now() + remainingMs;
 
       tick(runId); // Первый тик сразу
@@ -66,26 +64,39 @@ export function createTimer(options) {
         clearTimeout(timeoutId);
         timeoutId = null;
       }
-      // Фиксируем точное оставшееся время на момент паузы
       remainingMs = Math.max(0, deadline - Date.now());
     },
 
     reset() {
       isRunning = false;
+      hasFinished = false;
       if (timeoutId !== null) {
         clearTimeout(timeoutId);
         timeoutId = null;
       }
 
-      runId += 1; // Сбрасываем runId, чтобы любые зависшие тики умерли
+      runId += 1;
       remainingMs = durationMs;
       deadline = null;
 
-      onTick(remainingMs); // Сразу обновляем UI на стартовое значение
+      onTick(remainingMs); // Мгновенное обновление UI на стартовое значение
+    },
+
+    // НОВЫЙ МЕТОД: Мгновенная коррекция (для возвращения на вкладку)
+    sync() {
+      if (!isRunning) return;
+
+      // Отменяем плановый тик, чтобы не было двойного обновления
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+
+      // Вызываем tick немедленно: он пересчитает remainingMs от текущего Date.now()
+      // и сам запланирует следующий тик через 250 мс
+      tick(runId);
     },
 
     getSnapshot() {
-      // Возвращаем актуальное состояние. Если таймер идет, вычисляем на лету.
       const currentRemaining = isRunning
         ? Math.max(0, deadline - Date.now())
         : remainingMs;
@@ -98,8 +109,6 @@ export function createTimer(options) {
 
     destroy() {
       this.reset();
-      // В сложных приложениях здесь можно обнулить onTick и onFinish
-      // для гарантированного освобождения замыканий, но для нашей задачи reset достаточно.
     },
   };
 }

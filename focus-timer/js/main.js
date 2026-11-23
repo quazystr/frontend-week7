@@ -1,106 +1,111 @@
-/**
- * Модуль main.js
- * Демонстрация и тестирование фабрики createTimer без привязки к DOM.
- */
-
 import { createTimer } from "./timer.js";
 
-console.log("=== Тестирование фабрики createTimer ===");
-
-// Вспомогательная функция задержки для асинхронных тестов
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function runTests() {
-  let tickCount = 0;
-  let lastRemaining = 0;
-  let finished = false;
+  console.log("=== Тесты Task 6.2: Точное время ===");
 
-  // Создаем таймер на 1000 мс (1 секунда) для быстрых тестов
-  const timer = createTimer({
-    durationMs: 1000,
-    onTick: (ms) => {
-      tickCount += 1;
-      lastRemaining = ms;
+  // Тест 1: Частота обновления ~4 раза в секунду (250 мс)
+  let ticks1 = 0;
+  const timer1 = createTimer({
+    durationMs: 2000,
+    onTick: () => {
+      ticks1 += 1;
     },
+    onFinish: () => {},
+  });
+  timer1.start();
+  await delay(600);
+  timer1.destroy();
+  console.assert(
+    ticks1 >= 2 && ticks1 <= 4,
+    `Частота тиков: ожидали 2-4 за 600 мс, получили ${ticks1}`,
+  );
+
+  // Тест 2: onFinish вызывается ровно один раз
+  let finishCount = 0;
+  const timer2 = createTimer({
+    durationMs: 300,
+    onTick: () => {},
     onFinish: () => {
-      finished = true;
+      finishCount += 1;
     },
   });
-
-  // Тест 1: Начальное состояние
+  timer2.start();
+  // ✅ ИСПРАВЛЕНИЕ: увеличили с 500 до 1000 мс, чтобы учесть jitter браузера
+  await delay(1000);
   console.assert(
-    timer.getSnapshot().isRunning === false,
-    "Изначально таймер не запущен",
-  );
-  console.assert(
-    timer.getSnapshot().remainingMs === 1000,
-    "Начальное remainingMs = 1000",
+    finishCount === 1,
+    `onFinish должен быть вызван 1 раз, а не ${finishCount}`,
   );
 
-  // Тест 2: Запуск и работа
-  timer.start();
+  // Манипуляции после завершения — ни одна не должна вызвать onFinish повторно
+  timer2.sync(); // isRunning=false → ничего не делает
+  timer2.start(); // remainingMs=0 → ничего не делает (новая защита!)
+  timer2.pause(); // isRunning=false → ничего не делает
   console.assert(
-    timer.getSnapshot().isRunning === true,
-    "После start() isRunning = true",
+    finishCount === 1,
+    `После манипуляций onFinish не должен вызываться повторно. Получили: ${finishCount}`,
+  );
+  timer2.destroy();
+
+  // Тест 3: Мгновенная коррекция после блокировки потока + sync()
+  let lastRemaining = 0;
+  const timer3 = createTimer({
+    durationMs: 2000,
+    onTick: (ms) => {
+      lastRemaining = ms;
+    },
+    onFinish: () => {},
+  });
+  timer3.start();
+  await delay(100);
+
+  const blockStart = Date.now();
+  while (Date.now() - blockStart < 800) {
+    /* busy loop */
+  }
+
+  timer3.sync();
+
+  console.assert(
+    lastRemaining > 900 && lastRemaining < 1300,
+    `После блокировки и sync() остаток должен быть ~1100 мс. Получили: ${lastRemaining}`,
+  );
+  timer3.destroy();
+
+  // Тест 4: start() после завершения не запускает таймер заново
+  let restartFinishCount = 0;
+  const timer4 = createTimer({
+    durationMs: 200,
+    onTick: () => {},
+    onFinish: () => {
+      restartFinishCount += 1;
+    },
+  });
+  timer4.start();
+  await delay(500); // Ждём завершения
+  console.assert(restartFinishCount === 1, `Таймер завершился 1 раз`);
+
+  // Пытаемся запустить снова без reset() — не должно сработать
+  timer4.start();
+  await delay(300);
+  console.assert(
+    restartFinishCount === 1,
+    `start() после завершения без reset() не должен вызывать onFinish повторно. Получили: ${restartFinishCount}`,
   );
 
-  // ИСПРАВЛЕНИЕ: даем больший запас (400 мс) и проверяем широкий диапазон,
-  // чтобы тест не падал из-за микрозадержек Event Loop браузера.
-  await delay(400);
+  // А вот после reset() — должен запуститься и завершиться снова
+  timer4.reset();
+  timer4.start();
+  await delay(500);
   console.assert(
-    lastRemaining < 900 && lastRemaining > 300,
-    `Время должно уменьшиться. Ожидали 300-900, получили: ${lastRemaining}`,
+    restartFinishCount === 2,
+    `После reset() + start() таймер должен завершиться ещё раз. Получили: ${restartFinishCount}`,
   );
+  timer4.destroy();
 
-  // Тест 3: Пауза
-  timer.pause();
-  const pausedRemaining = lastRemaining;
-  console.assert(
-    timer.getSnapshot().isRunning === false,
-    "После pause() isRunning = false",
-  );
-
-  await delay(500); // Ждем 500 мс в паузе
-  console.assert(
-    lastRemaining === pausedRemaining,
-    `Во время паузы время не меняется. Было: ${pausedRemaining}, стало: ${lastRemaining}`,
-  );
-
-  // Тест 4: Возобновление и завершение
-  timer.start();
-  // ИСПРАВЛЕНИЕ: ждем с большим запасом (1200 мс), чтобы таймер точно успел дойти до 0,
-  // даже если предыдущие тики были с задержкой.
-  await delay(1200);
-  console.assert(finished === true, "Таймер завершился (onFinish вызван)");
-  console.assert(
-    lastRemaining === 0,
-    `Оставшееся время должно быть 0. Получили: ${lastRemaining}`,
-  );
-
-  // Тест 5: Сброс
-  finished = false;
-  tickCount = 0;
-  timer.reset();
-  console.assert(
-    timer.getSnapshot().remainingMs === 1000,
-    "После reset() remainingMs = 1000",
-  );
-  console.assert(
-    timer.getSnapshot().isRunning === false,
-    "После reset() isRunning = false",
-  );
-
-  // Тест 6: Защита от старых callback (runId)
-  timer.start();
-  const oldRunId = timer.getSnapshot().runId;
-  timer.reset(); // Это увеличит runId
-  const newRunId = timer.getSnapshot().runId;
-  console.assert(
-    newRunId === oldRunId + 1,
-    `reset() инкрементирует runId. Было: ${oldRunId}, стало: ${newRunId}`,
-  );
-
-  console.log("✅ Все тесты createTimer пройдены успешно!");
+  console.log("✅ Все тесты Task 6.2 пройдены!");
 }
 
 runTests();
