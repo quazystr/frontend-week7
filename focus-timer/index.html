@@ -2,12 +2,15 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Focus Timer: Day 6.3</title>
+    <title>Focus Timer</title>
     <link rel="stylesheet" href="css/main.css" />
   </head>
   <body>
+    <h1>Focus Timer</h1>
+    <p>Автоматические тесты — в консоли (F12).</p>
+
     <section>
-      <h2>Рабочий интерфейс</h2>
+      <h2>Таймер</h2>
 
       <div class="display" id="display">25:00</div>
 
@@ -21,11 +24,41 @@
         <button id="pause-btn" type="button">Pause</button>
         <button id="reset-btn" type="button">Reset</button>
       </div>
+    </section>
 
-      <div class="controls controls_lifecycle">
-        <button id="init-btn" type="button">init()</button>
-        <button id="destroy-btn" type="button">destroy()</button>
+    <section class="settings">
+      <h2 class="settings__title">Настройки</h2>
+
+      <div class="settings__row">
+        <label class="settings__label" for="focus-input">Фокус:</label>
+        <input
+          class="settings__input"
+          id="focus-input"
+          type="number"
+          min="1"
+          max="90"
+          value="25"
+        />
+        <span class="settings__unit">минут</span>
       </div>
+
+      <div class="settings__row">
+        <label class="settings__label" for="break-input">Перерыв:</label>
+        <input
+          class="settings__input"
+          id="break-input"
+          type="number"
+          min="1"
+          max="90"
+          value="5"
+        />
+        <span class="settings__unit">минут</span>
+      </div>
+
+      <div
+        class="settings__error settings__error_hidden"
+        id="settings-error"
+      ></div>
     </section>
 
     <script type="module" src="js/main.js"></script>

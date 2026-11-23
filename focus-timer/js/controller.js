@@ -1,10 +1,11 @@
 import { createTimer } from "./timer.js";
 
 export function createController(options) {
-  const { elements, durationMs } = options;
+  const { elements, settings } = options;
 
   let isInitialized = false;
   let status = "idle";
+  let mode = "focus"; // focus | break
   let abortController = null;
   let timer = null;
 
@@ -18,33 +19,18 @@ export function createController(options) {
 
     const { displayEl, statusEl, startBtn, pauseBtn, resetBtn } = elements;
 
-    if (statusEl) {
-      statusEl.textContent = status;
-    }
-
+    if (statusEl) statusEl.textContent = status;
     if (startBtn) startBtn.disabled = status === "running";
     if (pauseBtn) pauseBtn.disabled = status !== "running";
     if (resetBtn) resetBtn.disabled = status === "idle";
   }
 
-  function startTimer() {
-    if (!timer) return;
-    timer.start();
-  }
-
-  function pauseTimer() {
-    if (!timer) return;
-    timer.pause();
-  }
-
-  function resetTimer() {
-    if (!timer) return;
-    timer.reset();
+  function getCurrentDurationMs() {
+    return mode === "focus" ? settings.getFocusMs() : settings.getBreakMs();
   }
 
   function handleTick(remainingMs) {
     if (!isInitialized) return;
-
     const { displayEl } = elements;
     if (displayEl) {
       displayEl.textContent = formatTime(remainingMs);
@@ -65,22 +51,40 @@ export function createController(options) {
 
   function onHandleStart() {
     if (status === "running") return;
+
+    if (!timer) {
+      timer = createTimer({
+        durationMs: getCurrentDurationMs(),
+        onTick: handleTick,
+        onFinish: handleFinish,
+      });
+    }
+
     setStatus("running");
-    startTimer();
+    timer.start();
   }
 
   function onHandlePause() {
     if (status !== "running") return;
     setStatus("paused");
-    pauseTimer();
+    if (timer) timer.pause();
   }
 
   function onHandleReset() {
+    // Сбрасываем таймер — длительность возьмётся заново из settings при следующем start
+    if (timer) {
+      timer.destroy();
+      timer = null;
+    }
     setStatus("idle");
-    resetTimer();
+
+    // Обновляем дисплей согласно текущим настройкам
+    const { displayEl } = elements;
+    if (displayEl) {
+      displayEl.textContent = formatTime(getCurrentDurationMs());
+    }
   }
 
-  // Bind один раз при создании
   const handleStart = onHandleStart;
   const handlePause = onHandlePause;
   const handleReset = onHandleReset;
@@ -88,12 +92,6 @@ export function createController(options) {
   return {
     init() {
       if (isInitialized) return false;
-
-      timer = createTimer({
-        durationMs,
-        onTick: handleTick,
-        onFinish: handleFinish,
-      });
 
       abortController = new AbortController();
       const signal = abortController.signal;
@@ -103,6 +101,12 @@ export function createController(options) {
       elements.resetBtn.addEventListener("click", handleReset, { signal });
 
       isInitialized = true;
+
+      // Начальное отображение
+      const { displayEl } = elements;
+      if (displayEl) {
+        displayEl.textContent = formatTime(getCurrentDurationMs());
+      }
       updateUI();
       return true;
     },
@@ -114,7 +118,6 @@ export function createController(options) {
         timer.destroy();
         timer = null;
       }
-
       if (abortController) {
         abortController.abort();
         abortController = null;
@@ -125,13 +128,9 @@ export function createController(options) {
       return true;
     },
 
-    getStatus() {
-      return status;
-    },
-
-    isInitialized() {
-      return isInitialized;
-    },
+    getStatus: () => status,
+    isInitialized: () => isInitialized,
+    getMode: () => mode,
 
     simulateClick(buttonName) {
       if (!isInitialized) return false;
